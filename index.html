@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Игра "Русские Правители"</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f0f2f5;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+        .game-container {
+            background-color: #ffffff;
+            padding: 32px;
+            border-radius: 16px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+            text-align: center;
+            width: 100%;
+            max-width: 500px;
+        }
+        .card-display {
+            min-height: 80px; /* Обеспечиваем постоянную высоту */
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: #333;
+            margin-bottom: 24px;
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.05);
+        }
+        .input-group {
+            margin-bottom: 20px;
+        }
+        .answer-input {
+            width: calc(100% - 24px); /* Корректировка для отступов */
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 1.1rem;
+            text-align: center;
+            outline: none;
+            transition: border-color 0.2s ease-in-out;
+        }
+        .answer-input:focus {
+            border-color: #007bff;
+        }
+        .feedback-message {
+            min-height: 40px; /* Обеспечиваем постоянную высоту */
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .feedback-correct {
+            color: #28a745;
+        }
+        .feedback-incorrect {
+            color: #dc3545;
+        }
+        .button-group {
+            display: flex;
+            justify-content: center;
+            gap: 16px;
+            flex-wrap: wrap;
+        }
+        .game-button {
+            padding: 12px 24px;
+            border-radius: 10px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease-in-out;
+            border: none;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            flex-grow: 1;
+            min-width: 120px;
+        }
+        .game-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+        }
+        .game-button:active {
+            transform: translateY(0);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        .submit-button {
+            background-color: #007bff;
+            color: white;
+        }
+        .submit-button:hover {
+            background-color: #0056b3;
+        }
+        .next-button {
+            background-color: #6c757d;
+            color: white;
+        }
+        .next-button:hover {
+            background-color: #5a6268;
+        }
+        .score-display {
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: #555;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <div class="card-display" id="rulerDisplay"></div>
+        <div class="input-group">
+            <input type="text" id="reignInput" class="answer-input" placeholder="Введите годы правления (например, 1234-1256)">
+        </div>
+        <div class="feedback-message" id="feedbackMessage"></div>
+        <div class="button-group">
+            <button id="submitButton" class="game-button submit-button">Проверить</button>
+            <button id="nextButton" class="game-button next-button">Следующий</button>
+        </div>
+        <div class="score-display">Счет: <span id="scoreValue">0</span></div>
+    </div>
+
+    <script>
+        // Массив русских правителей и их годы правления
+        const rulers = [
+            { name: "Рюрик", reign: "862-879" },
+            { name: "Олег Вещий", reign: "879-912" },
+            { name: "Игорь Рюрикович", reign: "912-945" },
+            { name: "Ольга Киевская", reign: "945-964" },
+            { name: "Святослав Игоревич", reign: "964-972" },
+            { name: "Владимир Святославич", reign: "980-1015" },
+            { name: "Ярослав Мудрый", reign: "1019-1054" },
+            { name: "Владимир Мономах", reign: "1113-1125" },
+            { name: "Юрий Долгорукий", reign: "1149-1151, 1155-1157" }, // Пример с несколькими периодами
+            { name: "Андрей Боголюбский", reign: "1157-1174" },
+            { name: "Всеволод Большое Гнездо", reign: "1176-1212" },
+            { name: "Александр Невский", reign: "1252-1263" },
+            { name: "Даниил Московский", reign: "1276-1303" },
+            { name: "Иван Калита", reign: "1325-1340" },
+            { name: "Дмитрий Донской", reign: "1359-1389" },
+            { name: "Василий I Дмитриевич", reign: "1389-1425" },
+            { name: "Василий II Темный", reign: "1425-1462" },
+            { name: "Иван III Великий", reign: "1462-1505" },
+            { name: "Василий III Иванович", reign: "1505-1533" },
+            { name: "Иван IV Грозный", reign: "1533-1584" },
+            { name: "Федор I Иоаннович", reign: "1584-1598" },
+            { name: "Борис Годунов", reign: "1598-1605" },
+            { name: "Лжедмитрий I", reign: "1605-1606" },
+            { name: "Василий IV Шуйский", reign: "1606-1610" },
+            { name: "Михаил Федорович", reign: "1613-1645" },
+            { name: "Алексей Михайлович", reign: "1645-1676" },
+            { name: "Федор III Алексеевич", reign: "1676-1682" },
+            { name: "Софья Алексеевна (регент)", reign: "1682-1689" },
+            { name: "Иван V Алексеевич", reign: "1682-1696" },
+            { name: "Петр I Великий", reign: "1682-1725" },
+            { name: "Екатерина I Алексеевна", reign: "1725-1727" },
+            { name: "Петр II Алексеевич", reign: "1727-1730" },
+            { name: "Анна Иоанновна", reign: "1730-1740" },
+            { name: "Иван VI Антонович", reign: "1740-1741" },
+            { name: "Елизавета Петровна", reign: "1741-1762" },
+            { name: "Петр III Федорович", reign: "1762" },
+            { name: "Екатерина II Великая", reign: "1762-1796" },
+            { name: "Павел I Петрович", reign: "1796-1801" },
+            { name: "Александр I Павлович", reign: "1801-1825" },
+            { name: "Николай I Павлович", reign: "1825-1855" },
+            { name: "Александр II Николаевич", reign: "1855-1881" },
+            { name: "Александр III Александрович", reign: "1881-1894" },
+            { name: "Николай II Александрович", reign: "1894-1917" }
+        ];
+
+        // Получаем ссылки на элементы DOM
+        const rulerDisplay = document.getElementById('rulerDisplay');
+        const reignInput = document.getElementById('reignInput');
+        const feedbackMessage = document.getElementById('feedbackMessage');
+        const submitButton = document.getElementById('submitButton');
+        const nextButton = document.getElementById('nextButton');
+        const scoreValue = document.getElementById('scoreValue');
+
+        let currentRulerIndex;
+        let score = 0;
+
+        /**
+         * Выбирает случайного правителя из массива и отображает его имя.
+         */
+        function displayRandomRuler() {
+            // Очищаем сообщение обратной связи и включаем поле ввода
+            feedbackMessage.textContent = '';
+            feedbackMessage.classList.remove('feedback-correct', 'feedback-incorrect');
+            reignInput.value = '';
+            reignInput.disabled = false;
+            submitButton.disabled = false;
+            nextButton.disabled = true; // Отключаем кнопку "Следующий" до проверки ответа
+
+            currentRulerIndex = Math.floor(Math.random() * rulers.length);
+            rulerDisplay.textContent = rulers[currentRulerIndex].name;
+            reignInput.focus(); // Устанавливаем фокус на поле ввода для быстрого набора
+        }
+
+        /**
+         * Проверяет введенный пользователем ответ с правильными годами правления.
+         */
+        function checkAnswer() {
+            const userAnswer = reignInput.value.trim();
+            const correctAnswer = rulers[currentRulerIndex].reign;
+
+            // Нормализуем ответы для сравнения (без учета регистра, удаляем лишние пробелы)
+            const normalizedUserAnswer = userAnswer.toLowerCase().replace(/\s+/g, ' ');
+            const normalizedCorrectAnswer = correctAnswer.toLowerCase().replace(/\s+/g, ' ');
+
+            if (normalizedUserAnswer === normalizedCorrectAnswer) {
+                feedbackMessage.textContent = 'Правильно!';
+                feedbackMessage.classList.remove('feedback-incorrect');
+                feedbackMessage.classList.add('feedback-correct');
+                score++;
+                scoreValue.textContent = score;
+                reignInput.disabled = true; // Отключаем ввод после правильного ответа
+                submitButton.disabled = true; // Отключаем кнопку "Проверить"
+                nextButton.disabled = false; // Включаем кнопку "Следующий"
+            } else {
+                feedbackMessage.textContent = `Неправильно. Правильный ответ: ${correctAnswer}`;
+                feedbackMessage.classList.remove('feedback-correct');
+                feedbackMessage.classList.add('feedback-incorrect');
+                reignInput.disabled = true; // Отключаем ввод после неправильного ответа
+                submitButton.disabled = true; // Отключаем кнопку "Проверить"
+                nextButton.disabled = false; // Включаем кнопку "Следующий"
+            }
+        }
+
+        /**
+         * Обрабатывает действие "Следующий правитель".
+         */
+        function nextRuler() {
+            displayRandomRuler();
+        }
+
+        // Обработчики событий для кнопок
+        submitButton.addEventListener('click', checkAnswer);
+        nextButton.addEventListener('click', nextRuler);
+
+        // Разрешаем нажатие Enter для отправки ответа
+        reignInput.addEventListener('keypress', (event) => {
+            if (event.key === 'Enter') {
+                if (!submitButton.disabled) { // Только если кнопка "Проверить" активна
+                    checkAnswer();
+                } else if (!nextButton.disabled) { // Если "Проверить" неактивна, а "Следующий" активна, то Enter переходит к следующему
+                    nextRuler();
+                }
+            }
+        });
+
+        // Начальная настройка при загрузке страницы
+        document.addEventListener('DOMContentLoaded', () => {
+            displayRandomRuler(); // Загружаем первого правителя
+            nextButton.disabled = true; // Кнопка "Следующий" изначально отключена
+        });
+    </script>
+</body>
+</html>
+
